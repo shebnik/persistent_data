@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:persistent_data/services/hive_service.dart';
-import 'package:persistent_data/ui/pages/categories_page.dart';
+import 'package:persistent_data/ui/pages/home_page.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await HiveService.initialize();
-
+void main() {
   runApp(const MyApp());
 }
 
@@ -20,7 +16,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const CategoriesPage(),
+      home: const HomePage(),
     );
   }
 }
