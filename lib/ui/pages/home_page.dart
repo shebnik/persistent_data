@@ -1,96 +1,92 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:persistent_data/ui/widgets/footer_widget.dart';
-import 'package:http/http.dart' show get;
-import 'package:path/path.dart' as p;
+import 'package:persistent_data/database/database.dart';
+import 'package:persistent_data/services/utils.dart';
+import 'package:persistent_data/ui/pages/user_detail.dart';
+import 'package:persistent_data/ui/widgets/are_you_sure_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  late String imagesPath;
-  List<File>? images;
+  late AppDatabase _database;
 
   @override
   void initState() {
     super.initState();
-    _initialize();
+    _database = AppDatabase();
   }
 
-  Future<void> _initialize() async {
-    final appDocDir = await getApplicationDocumentsDirectory();
-    imagesPath = p.join(appDocDir.path, "images");
-    final imagesDir = await Directory(imagesPath).create(recursive: true);
-    images = await imagesDir.list().map((event) => File(event.path)).toList();
-    setState(() {});
+  Future<void> _addUser() async {
+    await _database.addUser(
+      UsersCompanion.insert(
+        firstName: "firstName",
+        lastName: "lastName",
+        age: 18,
+        avatar: "avatar",
+        phoneNumber: 380993221444,
+      ),
+    );
   }
 
-  Future<void> _saveImage(String url) async {
-    final imageName = url.substring(url.lastIndexOf("/") + 1);
-    final response = await get(Uri.parse(url));
-    File image = File(p.join(imagesPath, imageName));
-    await image.writeAsBytes(response.bodyBytes);
-    setState(() {
-      images?.add(image);
-    });
+  Future<void> _updateUser(User user) async {
+    await _database.updateUser(user);
+  }
+
+  Future<void> _removeUser(User user) async {
+    final result = await Utils.openDialog(
+      context,
+      AreYouSureDialog(
+          message:
+              "Would you like to remove ${user.lastName} ${user.firstName} user?"),
+    );
+    if (result != null) await _database.removeUser(user);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Images'),
+        title: const Text("Users"),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: images == null
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : imageList(),
-            ),
-          ),
-          FooterWidget(saveImage: _saveImage),
-        ],
+      body: StreamBuilder<List<User>>(
+        initialData: const [],
+        stream: _database.usersStream,
+        builder: (context, users) {
+          return ListView.builder(
+            itemCount: users.data!.length,
+            itemBuilder: (BuildContext context, int index) {
+              final user = users.data![index];
+              return InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => UserDetail(
+                      user: user,
+                      updateUser: _updateUser,
+                      removeUser: _removeUser,
+                    ),
+                  ),
+                ),
+                child: ListTile(
+                  // leading: Image.memory(user.avatar),
+                  title: Text("${user.lastName} ${user.firstName}"),
+                  subtitle: Text("${user.age} y.o."),
+                  trailing: IconButton(
+                    onPressed: () => _removeUser(user),
+                    icon: const Icon(Icons.delete),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
-    );
-  }
-
-  Widget imageList() {
-    if (images!.isEmpty) return noSavedImages();
-    return ListView.separated(
-      itemCount: images!.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final image = images![index];
-        return AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Image.file(
-            image,
-            fit: BoxFit.cover,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget noSavedImages() {
-    return Center(
-      child: Column(
-        children: const [
-          Icon(Icons.image),
-          SizedBox(height: 8),
-          Text('No saved images'),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addUser,
+        child: const Icon(Icons.add),
       ),
     );
   }
