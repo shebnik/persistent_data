@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:persistent_data/database/database.dart';
 import 'package:persistent_data/services/utils.dart';
+import 'package:persistent_data/ui/pages/add_user.dart';
 import 'package:persistent_data/ui/pages/user_detail.dart';
 import 'package:persistent_data/ui/widgets/are_you_sure_dialog.dart';
+import 'package:persistent_data/ui/widgets/avatar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -20,14 +24,24 @@ class _HomePageState extends State<HomePage> {
     _database = AppDatabase();
   }
 
+  void _showDetailPage(User user) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => UserDetail(
+          user: user,
+          updateUser: _updateUser,
+          removeUser: _removeUser,
+        ),
+      ),
+    );
+  }
+
   Future<void> _addUser() async {
-    await _database.addUser(
-      UsersCompanion.insert(
-        firstName: "firstName",
-        lastName: "lastName",
-        age: 18,
-        avatar: "avatar",
-        phoneNumber: 380993221444,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AddUser(
+          addUser: (user) async => await _database.addUser(user),
+        ),
       ),
     );
   }
@@ -61,17 +75,17 @@ class _HomePageState extends State<HomePage> {
             itemBuilder: (BuildContext context, int index) {
               final user = users.data![index];
               return InkWell(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => UserDetail(
-                      user: user,
-                      updateUser: _updateUser,
-                      removeUser: _removeUser,
-                    ),
-                  ),
-                ),
+                onTap: () => _showDetailPage(user),
                 child: ListTile(
-                  // leading: Image.memory(user.avatar),
+                  leading: user.avatar.isNotEmpty
+                      ? SizedBox(
+                          width: 50,
+                          height: 50,
+                          child: Avatar(
+                            imageBytes: base64Decode(user.avatar),
+                          ),
+                        )
+                      : null,
                   title: Text("${user.lastName} ${user.firstName}"),
                   subtitle: Text("${user.age} y.o."),
                   trailing: IconButton(

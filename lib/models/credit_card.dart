@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 class CreditCard {
-  int number;
-  int dueTo;
+  String number;
+  String dueTo;
   int cvv;
 
   CreditCard({
@@ -12,8 +12,8 @@ class CreditCard {
   });
 
   CreditCard copyWith({
-    int? number,
-    int? dueTo,
+    String? number,
+    String? dueTo,
     int? cvv,
   }) {
     return CreditCard(
@@ -33,16 +33,15 @@ class CreditCard {
 
   factory CreditCard.fromMap(Map<String, dynamic> map) {
     return CreditCard(
-      number: map['number']?.toInt() ?? 0,
-      dueTo: map['dueTo']?.toInt() ?? 0,
+      number: map['number'] ?? '',
+      dueTo: map['dueTo'] ?? '',
       cvv: map['cvv']?.toInt() ?? 0,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory CreditCard.fromJson(String source) =>
-      CreditCard.fromMap(json.decode(source));
+  factory CreditCard.fromJson(String source) => CreditCard.fromMap(json.decode(source));
 
   @override
   String toString() => 'CreditCard(number: $number, dueTo: $dueTo, cvv: $cvv)';
@@ -50,11 +49,11 @@ class CreditCard {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
+  
     return other is CreditCard &&
-        other.number == number &&
-        other.dueTo == dueTo &&
-        other.cvv == cvv;
+      other.number == number &&
+      other.dueTo == dueTo &&
+      other.cvv == cvv;
   }
 
   @override

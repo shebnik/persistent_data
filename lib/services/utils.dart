@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 class Utils {
@@ -24,5 +28,19 @@ class Utils {
         return dialog;
       },
     );
+  }
+
+  static Future<Uint8List?> chooseAvatar() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'bmp'],
+    );
+
+    if (result != null) {
+      String? path = result.files.single.path;
+      if (path == null) return null;
+      return await File(path).readAsBytes();
+    }
+    return null;
   }
 }

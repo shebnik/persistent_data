@@ -12,26 +12,21 @@ import 'package:persistent_data/services/utils.dart';
 import 'package:persistent_data/ui/widgets/app_text_field.dart';
 import 'package:persistent_data/ui/widgets/avatar.dart';
 
-class UserDetail extends StatefulWidget {
-  const UserDetail({
+class AddUser extends StatefulWidget {
+  const AddUser({
     Key? key,
-    required this.user,
-    required this.updateUser,
-    required this.removeUser,
+    required this.addUser,
   }) : super(key: key);
 
-  final User user;
-  final Future<void> Function(User) updateUser;
-  final Future<void> Function(User) removeUser;
+  final Future<int> Function(UsersCompanion) addUser;
 
   @override
-  State<UserDetail> createState() => _UserDetailState();
+  State<AddUser> createState() => _AddUserState();
 }
 
-class _UserDetailState extends State<UserDetail> {
-  late final User user;
+class _AddUserState extends State<AddUser> {
   CreditCard? creditCard;
-  bool isLoading = true;
+  bool isLoading = false;
   int errorFieldNumber = -1;
   Uint8List? avatar;
 
@@ -44,43 +39,10 @@ class _UserDetailState extends State<UserDetail> {
   final _creditCardCVVFieldController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    user = widget.user;
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
-    if (user.avatar.isNotEmpty) avatar = base64Decode(user.avatar);
-    _lastNameFieldController.text = user.lastName;
-    _firstNameFieldController.text = user.firstName;
-    _ageFieldController.text = user.age.toString();
-    _phoneFieldController.text = user.phoneNumber.toString();
-
-    creditCard = await SecureStorage.getCard(user.id);
-    if (creditCard == null) {
-      setState(() => isLoading = false);
-      return;
-    }
-
-    _creditCardNumberFieldController.text = creditCard!.number.toString();
-    // .replaceAllMapped(RegExp(r".{4}"), (match) => "${match.group(0)} ")
-    // .substring(0, 19);
-
-    _creditCardDueToFieldController.text = creditCard!.dueTo.toString();
-    // .replaceAllMapped(RegExp(r".{2}"), (match) => "${match.group(0)}/")
-    // .substring(0,4);
-
-    _creditCardCVVFieldController.text = creditCard!.cvv.toString();
-
-    setState(() => isLoading = false);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("User ${user.lastName} ${user.firstName}"),
+        title: const Text("Add user"),
       ),
       body: isLoading
           ? const Center(
@@ -96,6 +58,13 @@ class _UserDetailState extends State<UserDetail> {
       child: SingleChildScrollView(
         child: Column(
           children: [
+            if (avatar == null) ...[
+              const Text(
+                "Choose avatar:",
+                style: TextStyle(fontSize: 24),
+              ),
+            ],
+            const SizedBox(height: 8),
             GestureDetector(
               onTap: _chooseAvatar,
               child: Avatar(imageBytes: avatar),
@@ -160,16 +129,16 @@ class _UserDetailState extends State<UserDetail> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextButton(
-                      onPressed: _remove,
-                      child: const Text("Remove"),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Cancel"),
                     ),
                     const SizedBox(width: 16),
                     SizedBox(
                       height: 50,
                       width: 150,
                       child: ElevatedButton(
-                        child: const Text("Save"),
-                        onPressed: _save,
+                        child: const Text("Add"),
+                        onPressed: _add,
                       ),
                     ),
                   ],
@@ -182,7 +151,7 @@ class _UserDetailState extends State<UserDetail> {
     );
   }
 
-  Future<void> _save() async {
+  Future<void> _add() async {
     String firstName = _firstNameFieldController.text;
     if (firstName.isEmpty) {
       errorFieldNumber = 0;
@@ -237,19 +206,18 @@ class _UserDetailState extends State<UserDetail> {
     isLoading = true;
     setState(() {});
 
-    await widget.updateUser(
-      User(
-        id: user.id,
-        avatar: avatar == null ? "" : base64Encode(avatar!),
+    final id = await widget.addUser(
+      UsersCompanion.insert(
         firstName: firstName,
         lastName: lastName,
         age: int.parse(age),
         phoneNumber: int.parse(phoneNumber),
+        avatar: avatar == null ? "" : base64Encode(avatar!),
       ),
     );
 
     await SecureStorage.saveCard(
-      user.id,
+      id,
       CreditCard(
         number: creditCardNumber,
         dueTo: dueTo,
@@ -260,12 +228,7 @@ class _UserDetailState extends State<UserDetail> {
     Navigator.pop(context);
   }
 
-  Future<void> _remove() async {
-    await widget.removeUser(user);
-    Navigator.pop(context);
-  }
-
-   Future<void> _chooseAvatar() async {
+  Future<void> _chooseAvatar() async {
     final _avatar = await Utils.chooseAvatar();
     if (_avatar != null) {
       avatar = _avatar;

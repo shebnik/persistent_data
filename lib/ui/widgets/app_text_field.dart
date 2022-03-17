@@ -36,6 +36,7 @@ class AppTextField extends StatelessWidget {
         inputFormatters: getInputFieldFormatters(),
         decoration: InputDecoration(
           label: label != null ? Text(label!) : null,
+          hintText: getHintText(),
           errorText: showError ? "$label is wrong" : null,
           border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(
@@ -44,8 +45,18 @@ class AppTextField extends StatelessWidget {
           ),
           suffixIcon: getSuffixIcon(),
         ),
+        onChanged: onChanged,
       ),
     );
+  }
+
+  void onChanged(String value) {
+    if (fieldType == FieldType.creditCardNumber && value.endsWith(" ") ||
+        fieldType == FieldType.creditCardDueTo && value.endsWith("/")) {
+      controller.text = value.substring(0, value.length - 1);
+      controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: controller.text.length));
+    }
   }
 
   List<TextInputFormatter> getInputFieldFormatters() {
@@ -85,6 +96,25 @@ class AppTextField extends StatelessWidget {
         break;
     }
     return inputFormatters;
+  }
+
+  String? getHintText() {
+    switch (fieldType) {
+      // case FieldType.name:
+      //   return "";
+      // case FieldType.age:
+      //   return "";
+      // case FieldType.phoneNumber:
+      //   return "";
+      case FieldType.creditCardNumber:
+        return "XXXX XXXX XXXX XXXX";
+      case FieldType.creditCardDueTo:
+        return "MM/YY";
+      case FieldType.creditCardCVV:
+        return "XXX";
+      default:
+        return null;
+    }
   }
 
   Icon? getSuffixIcon() {
